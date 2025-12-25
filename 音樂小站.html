@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SONIC MUSEUM | 城市聲音地圖</title>
+    <style>
+        :root {
+            --primary-color: #4facfe;
+            --text-main: #2d3436;
+            --text-sub: #636e72;
+            /* 預設背景：乾淨的淺灰色 */
+            --bg-default: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+        }
+
+        body {
+            background: var(--bg-default);
+            background-attachment: fixed;
+            color: var(--text-main);
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 60px 20px;
+            /* 重要：讓背景變色時有 1.5 秒的滑順過渡 */
+            transition: background 1.5s ease; 
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #30cfd0, #330867);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .subtitle { margin-bottom: 60px; color: var(--text-sub); letter-spacing: 2px; }
+
+        .music-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 35px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            border-radius: 30px;
+            padding: 40px 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 啟動狀態的卡片 */
+        .card.active {
+            border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-svg { width: 50px; height: 50px; stroke: var(--text-main); fill: none; margin-bottom: 15px; transition: 0.3s; }
+        .card.active .icon-svg { stroke: var(--primary-color); transform: scale(1.1); }
+
+        .mood-text { 
+            font-size: 1rem; 
+            color: var(--text-sub); 
+            margin: 10px 0; 
+            transition: 0.3s;
+        }
+        .card.active .mood-text { 
+            color: var(--primary-color); 
+            font-weight: bold;
+            animation: breathe 2s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* 控制按鈕 */
+        .control-btn {
+            width: 55px; height: 55px;
+            border-radius: 50%;
+            background: #fff;
+            border: 1px solid #ddd;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 15px; transition: 0.3s;
+            z-index: 10;
+        }
+
+        /* 播放時按鈕變為紅色(暫停色) */
+        .card.active .control-btn {
+            background: #ff7675; 
+            border-color: transparent;
+            box-shadow: 0 5px 15px rgba(255, 118, 117, 0.4);
+            transform: scale(1.05);
+        }
+
+        .btn-icon { width: 22px; height: 22px; fill: var(--text-main); }
+        .card.active .btn-icon { fill: white; }
+
+        .icon-pause { display: none; }
+        .card.active .icon-play { display: none; }
+        .card.active .icon-pause { display: block; }
+
+        /* 進度條 */
+        .progress-container {
+            width: 80%; height: 4px; background: rgba(0,0,0,0.05); 
+            border-radius: 2px; margin-top: 25px; opacity: 0;
+            transition: 0.3s;
+        }
+        .card.active .progress-container { opacity: 1; }
+        .progress-bar { width: 0%; height: 100%; background: var(--primary-color); border-radius: 2px; }
+
+        audio { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>SONIC MUSEUM</h1>
+    <p class="subtitle">城市聲音地圖 — 點擊方塊進入意境</p>
+
+    <div class="music-container">
+        <div class="card" onclick="playMusic('sound1', this, 'linear-gradient(120deg, #cfd9df 0%, #e2ebf0 100%)')">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16 13v5M8 13v5M12 15v5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>
+            <h3>午後雷陣雨</h3>
+            <p class="mood-text">濕漉漉的寂寞感</p>
+            
+            <div class="control-btn" onclick="pauseMusic(event, 'sound1', this.parentElement)">
+                <svg class="btn-icon icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="btn-icon icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </div>
+
+            <div class="progress-container"><div class="progress-bar" id="p1"></div></div>
+            <audio id="sound1" src="rain.mp3" ontimeupdate="updateProgress('sound1', 'p1')"></audio>
+        </div>
+
+        <div class="card" onclick="playMusic('sound2', this, 'linear-gradient(120deg, #f6d365 0%, #fda085 100%)')">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 1 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+            <h3>深夜咖啡廳</h3>
+            <p class="mood-text">剛好及格的放鬆</p>
+            
+            <div class="control-btn" onclick="pauseMusic(event, 'sound2', this.parentElement)">
+                <svg class="btn-icon icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="btn-icon icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </div>
+
+            <div class="progress-container"><div class="progress-bar" id="p2"></div></div>
+            <audio id="sound2" src="cafe.mp3" ontimeupdate="updateProgress('sound2', 'p2')"></audio>
+        </div>
+
+        <div class="card" onclick="playMusic('sound3', this, 'linear-gradient(120deg, #e6e9f0 0%, #eef1f5 100%)')">
+            <svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="7" cy="12" r="1.5"/><circle cx="17" cy="12" r="1.5"/><path d="M2 8h20"/></svg>
+            <h3>捷運廣播</h3>
+            <p class="mood-text">焦慮與期待的交匯</p>
+
+            <div class="control-btn" onclick="pauseMusic(event, 'sound3', this.parentElement)">
+                <svg class="btn-icon icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="btn-icon icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </div>
+
+            <div class="progress-container"><div class="progress-bar" id="p3"></div></div>
+            <audio id="sound3" src="mrt.mp3" ontimeupdate="updateProgress('sound3', 'p3')"></audio>
+        </div>
+    </div>
+
+    <script>
+        const originalBg = "linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)";
+
+        // 負責播放並改變背景
+        function playMusic(id, element, bgColor) {
+            const audio = document.getElementById(id);
+            const allAudios = document.querySelectorAll('audio');
+            const allCards = document.querySelectorAll('.card');
+
+            // 如果已經在播，則不重複動作
+            if (!audio.paused) return;
+
+            // 1. 先停掉所有正在播放的聲音，並重置樣式
+            allAudios.forEach((a, i) => {
+                a.pause();
+                allCards[i].classList.remove('active');
+            });
+
+            // 2. 播放當前選中的聲音
+            audio.play().catch(e => console.log("需與頁面互動後播放"));
+            element.classList.add('active');
+
+            // 3. 改變全網頁背景顏色
+            document.body.style.background = bgColor;
+
+            // 4. 音樂結束後自動重置 UI
+            audio.onended = () => resetUI(element);
+        }
+
+        // 負責暫停並還原背景
+        function pauseMusic(event, id, element) {
+            event.stopPropagation(); // 阻止事件傳遞給外層方塊
+            const audio = document.getElementById(id);
+            audio.pause();
+            resetUI(element);
+        }
+
+        // 重置背景與樣式的公用函式
+        function resetUI(element) {
+            element.classList.remove('active');
+            document.body.style.background = originalBg;
+        }
+
+        // 更新進度條
+        function updateProgress(audioId, barId) {
+            const audio = document.getElementById(audioId);
+            const bar = document.getElementById(barId);
+            if(audio.duration) {
+                const percentage = (audio.currentTime / audio.duration) * 100;
+                bar.style.width = percentage + '%';
+            }
+        }
+    </script>
+</body>
+</html>
